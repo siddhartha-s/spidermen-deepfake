@@ -16,10 +16,17 @@ When done right, this can be used to create photorealistic images (and videos). 
 
 Before that, we deepdive into the machine learning under a deepfake. 
 
-### Theory and Science
+### How a deepfake works
 
-The most simple version of a deepfake relies on the neural network known as an **autoencoder**.  
+The most simple version of a deepfake relies on the neural network known as an **autoencoder**, a deep neural network consisting of 2 components -an encoder and  adecoder. The encoder's role is to learn to encode an input image into a lower-dimensional representation, while the decoder’s role is to reconstruct this representation back into the original image which, at a high level. This lower dimensional latent space within the autoencoder acts as a bottleneck and ensures that the network actually recreates these images instead of just outputting the inputted image pixel by pixel. 
 
+Images containing the faces of both people involved in the deepfake are passed through the autoencoder to help the latent space 
+learn broader patterns within the image. For example, the latent space learns how to recreate Tobey Maguire's jawline. 
+
+The deepfake setup has the images compressed to the lower dimension latent space for both persons involved in the deepfake and two separate decoders, one to turn the representation back to Person A (Tobey Maguire) and one to turn the representation back to Person B (Tom Holland). 
+<p align="center">
+![Fallon Oliver autoencoder](https://cdn-images-1.medium.com/max/800/1*3PGiPLIUEzd0ZMLxlQyFhw.png)
+</p>
 ```markdown
 Syntax highlighted code block
 
@@ -41,10 +48,6 @@ Syntax highlighted code block
 For more details see [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).
 
 ### Delete before submission VVVVVV
-
-You can use the [editor on GitHub](https://github.com/siddhartha-s/spidermen-deepfake/edit/master/README.md) to maintain and preview the content for your website in Markdown files.
-
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
 
 Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/siddhartha-s/spidermen-deepfake/settings). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
 
