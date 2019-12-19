@@ -12,24 +12,62 @@ However, the technology behind faceswapping, which is a major portion of what de
 
 This technology can only be used on pre-existing images of both faces. It cannot morph one person's face into another maintaining the exact original expression if a pre-existing picture with that expression does not exist. This is where deepfakes come in. The novelty of a deepfake is that using it, one would be able to transform person A’s face to mimic someone else’s facial features (say a person B), although preserving the original (person A's) facial expression.
 
-When done right, this can be used to create photorealistic images (and videos). Positive outcomes from the application of this technology can be seen in examples such as a [Deepfake Dalì being used to engage customers in a museum in St. Petersburg, Florida](https://www.theverge.com/2019/5/10/18540953/salvador-dali-lives-deepfake-museum). We explore the troubles which come along with the adoption of this technology in the **Ethics** section below.
+When done right, this can be used to create photorealistic images (and videos). In spite of the potential dangers of this technology, there are many positive examples of its use. In a fun, interactive exhibit, an ad agency created a [Deepfake Salvador Dalì engage with museumgoers in St. Petersburg, Florida](https://www.theverge.com/2019/5/10/18540953/salvador-dali-lives-deepfake-museum).
 
-Before that, we dive into the machine learning under a deepfake.
 
 ### How a Deepfake Works
 
-The most simple version of a deepfake relies on the neural network known as an **autoencoder**, a deep neural network consisting of 2 components--an encoder and a decoder. The encoder's role is to learn to encode an input image into a lower-dimensional representation, while the decoder’s role is to reconstruct this representation back into the original image. This lower-dimensional latent space within the autoencoder acts as a bottleneck and ensures that the network actually recreates these images instead of just outputting the inputted image pixel by pixel.
+#### Autoencoders
 
-In a successfully trained autoencoder, the latent space encodes enough information to send arbitrary points through the decoder to create novel images. In some cases such as variational autoencoders, a special loss function is used to impose structure on the latent space to encourage points in the latent space that do not correspond to training points to produce reasonable outputs. In other cases, such as ours, we train a single encoder but multiple decoders so that we can decode points that were used to train the encoder but not the decoder.
+The most simple version of a deepfake relies on the neural network known as an [**autoencoder**](https://towardsdatascience.com/auto-encoder-what-is-it-and-what-is-it-used-for-part-1-3e5c6f017726), a deep neural network that can be separated into 2 components--an **encoder** and a **decoder**. An autoencoder's goal is to process an image and give you back the same image as closely as it can recreate it. The tricky part is that the autoencoder has to throw away information in the encoder half and try to interpolate what it threw away in the decoder half.
 
-### Ethics
+We will take the example of an image. An image is usually defined by thousands of individual pixels, which are generally defined by 3 integers from 0 to 255 representing the relative strength of red, green, and blue in the image. If your image is as small as 256x256, this gives the any neural net that reads it a 196,608-dimensional input! An autoencoder is a neural net that starts out with an input layer of a certain size, such as the 196,608 dimensions of our picture, with each subsequent layer getting smaller until a smallest layer in the middle called the **bottleneck layer**. After the bottleneck layer, the dimensionality of each layer progressively increases up to the output layer, which has the same dimensionality as the input layer. The network is trained to minimize the difference between the input and output layers.
 
-Although creating a representation of something that does not exist in reality, even a photorealistic representation, is not a new practice, deepfakes offer unprecendented access and efficiency to their creation. Deepfakes have already been used in ethically irresponsible ways, such as the aforementioned faceswapping the faces of celebrities into explicit videos.
+![Autoencoder example](https://miro.medium.com/max/1440/1*gZCVcwRz0ziWdoQL3VzSAw.png)
 
-This is not to condemn the technology; there have been legitimate reasons to go through the effort of creating fake content (such as entertainment). They remain the same and are enhanced by deepfakes. However, as always happens when barriers to entry of a powerful technology are removed, the potential abuses are greatly magnified. People are already working on deepfake detection algorithms. It is the responsibility of those of us who understand and can use the technology to minimize the potential for abuse.
+So if the network learns to output the same thing as was put in, why bother making a network at all? The answer lies in the **latent space**, a term for vectors of the dimensionality as the bottleneck layer. By isolating the half of the neural network up to the bottleneck, information can be "encoded" in the latent space. This encoded vector in the latent space has value because it is smaller than the original image but can be "decoded" by the second half of the neural network to output something that (hopefully) looks very similar to the image that was put into the encoder. Because of this, the value in an autoencoder is the separated ability to encode and decode with its halves.
+
+#### Generation with Autoencoders
+
+As useful as it is to have an encoder that compresses information down to a lower-dimensional representation and a decoder that can create an image from the encoding, those alone do not give the ability to create deepfakes. Novel image generation can occur, however, because of one important fact: the decoder can be used on any vector in the latent space, not just a real image's vector encoding.
+
+However, throwing randomly generated vectors from the latent space into the decoder is unlikely to give meaningful output. Most vectors in the latent space will generate images of useless noise when decoded, but there are some ways around this. [**Variational Autoencoders**](https://towardsdatascience.com/intuitively-understanding-variational-autoencoders-1bfe67eb5daf) try to enforce a meaning to proximity in the latent space. In other words, vectors that are close to each other in the latent space of a variational autoencoder should produce similar output, which may or may not happen in another autoencoder. They impose this structure on the latent space by way of the loss function. A normal autoencoder tries to minimize the difference between the input and output images, but a variational autoencoder learns both a mean and a variance in the latent space. With those numbers and the assumption that a Gaussian distribution exists, variational autoencoders can generate novel images from points in the latent space.
+
+It is also possible to train multiple decoders off a single encoder. To do this, begin with a training set and train a full autoencoder. After you have that, keep the encoder and use it to find the latent space representations of a different, narrower training set. Use those to train a decoder specific to that narrower category of data, and then anything from the broader training set can be encoded with your encoder and decoded with a more specific decoder that will transform it into something resembling the narrower class of data.
+
+That is all very broad, so we will examine a [specific example](https://goberoi.com/exploring-deepfakes-20c9947c22d9).
+
+![Multiple decoder case](https://miro.medium.com/max/1182/1*3PGiPLIUEzd0ZMLxlQyFhw.png)
+
+In the above picture, an autoencoder was trained on a set of distorted faces of Jimmy Fallon and John Oliver. That encoder was used to train a decoder with only data from Fallon and another exclusively of pictures of Oliver.
+
+![Fallon to Oliver transformation](https://miro.medium.com/max/1182/1*3m1BKsjoOavu4UPcZw4-Iw.png)
+
+The decoder above was trained only with pictures of John Oliver, so it will generate images of his face. However, the encoder was trained to encode pictures of both Fallon and Oliver, so sending a picture of Fallon into the encoder and decoding it as a picture of Oliver yields a picture of Oliver retaining characteristics of the input Fallon face.
+
 
 ### Spiderman Swapping
 
-As we looked through libraries and tutorials for faceswappers and autoencoders we noticed that faceswappers are generally packaged and as such hide the mechanics of the software from the user. Simple autoencoders are often used as tutorials, but they almost always use the MNIST handwritten digit dataset. While this is informative, the MNIST dataset is so simple that some important aspects of real-world use are glossed over. For example, most work with images is done with 3 channels (RGB) rather than single channel (grayscale), but MNIST digits are single-channel images. Further, they are such small images that autoencoders will use at most one intermediate step between the input layer and the latent representation layer.
+#### Why swap Spidermen?
 
-We attempt to address these issues by creating a real-world example of an autoencoder replacing one famous Spiderman actor with another. We collected thousands of images of Tom Holland and Tobey Maguire from YouTube videos and created an autoencoder with images of their faces. We also created a decoder trained specifically with Tom Holland pictures and the same encoder from the first autoencoder. Then an image of Tobey Maguire can be passed through the encoder and Tom Holland decoder to create a Tom Holland version of whatever facial expression Tobey Maguire is making. For more details of network architecture, see the notebooks in this repository.
+As we looked through libraries and tutorials for faceswappers and autoencoders we noticed that faceswappers are generally packaged and as such hide the mechanics of the software from the user. This is useful but uninformative. On the other hand, simple autoencoders are often used as tutorials, but they almost always use the popular MNIST handwritten digit dataset. While this is more informative, the MNIST dataset is so simple that some important aspects of real-world use are glossed over. For example, most work with images is done with 3 channels (RGB) rather than single channel (grayscale), but MNIST digits are single-channel images. Further, they are such small images that autoencoders will use at most one intermediate step between the input layer and the latent representation layer. In real application, autoencoders will often perform poorly with only a single layer between the input and the bottleneck.
+
+![Pictures](https://i.imgur.com/mTzQcO0.png)
+
+We attempt to address these issues by creating a real-world example of an autoencoder replacing one famous Spiderman actor with another. We collected thousands of images of Tom Holland and Tobey Maguire from YouTube videos and created an autoencoder with images of their faces.
+
+#### How are the Spidermen swapped?
+
+Our architecture is similar to the architecture described above of Jimmy Fallon and John Oliver, though the code was not shared in that example. We started with an autoencoder trained with ~3,000 images each of Tobey Maguire's and Tom Holland's faces. We took that encoder and trained a Tom Holland-specific decoder by holding the encoder constant but training a new decoding half of the neural net and optimizing its weights to produce images of Tom Holland. The end result is that a picture of Tobey Maguire can be run through the encoder and Tom Holland decoder to produce a picture of Tom Holland's face making the same expression as the inputted Tobey Maguire picture.
+
+![Spider swap](https://i.imgur.com/0HOKp9E.png?2)
+
+#### Limitations
+
+Our approach was limited by our compute power, training set, and time.
+
+Although our code is included, we did not have time to make it fully human-readable, so savvier readers intending to learn from our network architecture will not have as easy of a time as we had intended.
+
+The faceswapper also performed poorly on images taken from outside its fairly narrow intended use case of transforming Tobey Maguire (or Tom Holland) into Tom Holland. Below is its attempt to transform our faces into Tom Holland's:
+
+![Faceswap fail](https://i.imgur.com/pQ1tqQh.png?1)
